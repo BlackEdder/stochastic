@@ -2,7 +2,7 @@
 
 ## Goal
 
-This library implements various functions needed useful for stochastic simulations. The project is still very young. It supports random drawing from normal and exponential distribution. Implementation of the gillespie algorithm is planned for the near future.
+This library implements various functions useful for stochastic simulations. Currently the project contains a simple implementation of the Gillespie algorithm. It also add  support for drawing random values from normal and exponential distributions. 
 
 ## License
 
