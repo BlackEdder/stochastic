@@ -1,0 +1,9 @@
+{
+	"name": "stochastic",
+	"description": "Drawing random numbers from probability distributions.",
+	"copyright": "Copyright © 2014, Edwin van Leeuwen",
+	"authors": ["Edwin van Leeuwen"],
+	"targetType": "library",
+	"dependencies": {
+	}
+}
