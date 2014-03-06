@@ -22,6 +22,23 @@
 	 */
 
 /**
-	Implement the gillespie algorithm
+	Implement the Gillespie algorithm
 	*/
 module stochastic.gillespie;
+
+import std.random;
+
+interface Event
+{
+	real get_rate();
+}
+
+interface EventContainer
+{
+	real get_total_rate();
+	void add_event( const Event );
+	void del_event( const Event );
+
+	real time_till_next_event();
+	Event random_event( ref Random gen );
+}
