@@ -1,6 +1,6 @@
 {
 	"name": "stochastic",
-	"description": "Drawing random numbers from probability distributions.",
+	"description": "Implementation of the gillespie algorithm for stochastic simulations. Also add support for drawing random numbers from probability distributions.",
 	"copyright": "Copyright © 2014, Edwin van Leeuwen",
 	"license": "GPL-3.0",
 	"authors": ["Edwin van Leeuwen"],
