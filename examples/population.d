@@ -1,5 +1,6 @@
 import std.stdio;
 import std.random;
+import std.range;
 
 import stochastic.gillespie;
 
@@ -46,6 +47,13 @@ class DeathEvent : Event {
 		GrowthEvent growth_event;
 }
 
+struct GillespieState {
+	real time = 0;
+	BaseEvent event;
+	EventList gillespie;
+	Random gen;
+}
+
 void simulate_population() {
 	Random gen;
 
@@ -59,21 +67,35 @@ void simulate_population() {
 		auto dev = new DeathEvent( gev );
 		population.add_event( dev );
 	}
-	double t = 0;
-	while ( t < 400 ) {
-		t += population.time_till_next_event( gen );
-		auto event = cast(Event) population.get_next_event( gen );
+
+	GillespieState init_state;
+	init_state.gillespie = population;
+	init_state.time = population.time_till_next_event( init_state.gen );
+	init_state.event = population.get_next_event( init_state.gen );
+	auto simulation = recurrence!((s,n){
+			auto state = s[n];
+			state.time += state.gillespie.time_till_next_event( state.gen );
+			state.event = state.gillespie.get_next_event( gen );
+			return state;
+		})( init_state );
+
+	foreach ( state; simulation ) {
+		if (state.time > 400) {
+			writeln( state.time, " ", density );
+			break;
+		}
+
+		auto event = cast(Event) state.event;
 		density += event.execute();
 		if (density == 0) {
 			writeln( "Population went extinct." );
 			break;
 		}
-		writeln( t, " ", density );
 	}
 }
 
 void main() {
 	import std.datetime;
-	auto r = benchmark!(simulate_population)(1);
+	auto r = benchmark!(simulate_population)(100);
 	writeln( "Simulation took (in milliseconds): ", r[0].msecs );
 }
