@@ -26,6 +26,8 @@
 	*/
 module stochastic.gillespie;
 
+import stochastic.random;
+
 import std.random;
 import std.range;
 import std.container;
@@ -113,8 +115,38 @@ interface EventContainer
 }
 
 /**
-	* Main class used for the gillespie algorithm
-	*/
+ * Main class used for the gillespie algorithm
+ *
+ * Examples:
+ * --------------------
+ * import std.stdio;
+ * import std.random;
+ * import stochastic.gillespie;
+ *
+ * class Event : BaseEvent {
+ *   void execute() {
+ *     writeln( "Event is executed which has rate: ", rate );
+ *   }
+ * }
+ * 
+ * void main() {
+ *   Random gen;
+ *   auto gillespie = new EventList();
+ *   auto ev1 = new Event;
+ *   ev1.rate = 10;
+ *   gillespie.add_event( ev1 );
+ *   auto ev2 = new Event;
+ *   ev2.rate = 90;
+ *   gillespie.add_event( ev2 );
+ *   foreach( state; gillespie.simulation( gen ) ) {
+ *     if (state[0]>10000) // Time > 10000
+ *       break; // Stop after a certain time
+ *     writeln( "At time: ", state[0] );
+ *     (cast(Event) state[1]).execute(); // Execute the event
+ *   }
+ * }
+ * --------------------
+ */
 class EventList : EventContainer, RateMonitor {
 	@property real total_rate() { return mytotal_rate; }
 
@@ -192,6 +224,9 @@ class EventList : EventContainer, RateMonitor {
 		assert( t > 9 && t < 11 );
 	}
 
+	/**
+		* Return a (lazy) infinite list with tuples containing the time and event
+		*/
 	auto simulation( ref Random gen ) {
 		auto init_state = tuple( this.time_till_next_event( gen ),
 				this.get_next_event( gen ) );
