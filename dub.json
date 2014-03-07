@@ -6,5 +6,6 @@
 	"authors": ["Edwin van Leeuwen"],
 	"targetType": "library",
 	"dependencies": {
+		"tested": "~master"
 	}
 }
