@@ -87,7 +87,6 @@ class BaseEvent
 		assert( m.latest_rate == 5 );
 	}
 
-
 	private: 
 		real myrate = 0;
 		RateMonitor mymonitor = null;
@@ -161,7 +160,6 @@ class EventList : EventContainer, RateMonitor {
 	}
 
 	unittest {
-		import std.stdio;
 		Random gen;
 		auto el = new EventList();
 		auto ev1 = new BaseEvent();
@@ -182,7 +180,6 @@ class EventList : EventContainer, RateMonitor {
 		assert( ev2_count > 890 && ev2_count < 910 );
 		assert( t > 9 && t < 11 );
 	}
-
 
 	private:
 		real mytotal_rate = 0;
