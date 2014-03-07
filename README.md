@@ -34,7 +34,11 @@ Run the following to generate API documentation
 
 ### Gillespie
 
-The Gillespie algorithm execute events in random order. Events with a larger rate will happen more often than events with a low rate. The algorithm is currently implemented using EventList, which will return the time till the next event and the next event.
+The Gillespie algorithm executes events in random order. Events with a larger rate will happen more often than events with a low rate. The algorithm is currently implemented using EventList, which will return the time till the next event and the next event.
+
+See [examples/population.d](examples/population.d) for an example
+
+    dub --config=population
 
 ## License
 
