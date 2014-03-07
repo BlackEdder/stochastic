@@ -27,6 +27,7 @@
 module stochastic.gillespie;
 
 import std.random;
+import std.range;
 import std.container;
 import std.exception;
 
@@ -189,6 +190,40 @@ class EventList : EventContainer, RateMonitor {
 		}
 		assert( ev2_count > 890 && ev2_count < 910 );
 		assert( t > 9 && t < 11 );
+	}
+
+	auto simulation( ref Random gen ) {
+		auto init_state = tuple( this.time_till_next_event( gen ),
+				this.get_next_event( gen ) );
+		return recurrence!((s,n){
+				return tuple (s[n-1][0] +	this.time_till_next_event( gen ),
+					this.get_next_event( gen ) );
+				})( init_state );
+	}
+
+	unittest {
+		Random gen;
+		auto el = new EventList();
+		auto ev1 = new BaseEvent();
+		ev1.rate = 10.0;
+		el.add_event( ev1 );
+		assert( el.get_next_event( gen ) == ev1 );
+
+		auto ev2 = new BaseEvent();
+		ev2.rate = 90.0;
+		el.add_event( ev2 );
+		
+		auto results = take( el.simulation( gen ), 1000 );
+		
+		foreach ( tp; results ) {
+			if ( tp[1] == ev2) {
+				real old_rate = tp[1].rate;
+				tp[1].rate = 0.9 * tp[1].rate;
+				// Test whether we are passing a reference
+				assert( el.total_rate >= 0.899*old_rate+10.0 );
+				assert( el.total_rate <= 0.901*old_rate+10.0 );
+			}
+		}
 	}
 
 	private:

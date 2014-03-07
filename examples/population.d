@@ -50,8 +50,6 @@ class DeathEvent : Event {
 struct GillespieState {
 	real time = 0;
 	BaseEvent event;
-	EventList gillespie;
-	Random gen;
 }
 
 void simulate_population() {
@@ -68,25 +66,13 @@ void simulate_population() {
 		population.add_event( dev );
 	}
 
-	GillespieState init_state;
-	init_state.gillespie = population;
-	init_state.time = population.time_till_next_event( init_state.gen );
-	init_state.event = population.get_next_event( init_state.gen );
-	init_state.gen = gen;
-	auto simulation = recurrence!((s,n){
-			auto state = s[n];
-			state.time += state.gillespie.time_till_next_event( state.gen );
-			state.event = state.gillespie.get_next_event( gen );
-			return state;
-		})( init_state );
-
-	foreach ( state; simulation ) {
-		if (state.time > 400) {
-			writeln( state.time, " ", density );
+	foreach ( state; population.simulation( gen ) ) {
+		if (state[0] > 400) {
+			writeln( state[0], " ", density );
 			break;
 		}
 
-		auto event = cast(Event) state.event;
+		auto event = cast(Event) state[1];
 		density += event.execute();
 		if (density == 0) {
 			writeln( "Population went extinct." );
