@@ -29,7 +29,7 @@ module stochastic.gillespie;
 import std.random;
 import std.container;
 
-interface RateMonitor
+private interface RateMonitor
 {
 	void update_rate( real old_rate, real new_rate );
 }

@@ -22,7 +22,7 @@
 	 */
 
 module stochastic.random;
-import std.random;
+public import std.random;
 import std.math;
 import std.stdio;
 
