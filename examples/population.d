@@ -55,7 +55,7 @@ struct GillespieState {
 }
 
 void simulate_population() {
-	Random gen;
+	static Random gen;
 
 	EventList population = new EventList();
 
@@ -72,6 +72,7 @@ void simulate_population() {
 	init_state.gillespie = population;
 	init_state.time = population.time_till_next_event( init_state.gen );
 	init_state.event = population.get_next_event( init_state.gen );
+	init_state.gen = gen;
 	auto simulation = recurrence!((s,n){
 			auto state = s[n];
 			state.time += state.gillespie.time_till_next_event( state.gen );
