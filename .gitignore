@@ -1,5 +1,6 @@
 *.a
 .dub/
-docs/
+docs*
 __*
 .*.swp
+bin/

@@ -28,6 +28,7 @@ module stochastic.gillespie;
 
 import std.random;
 import std.container;
+import std.exception;
 
 private interface RateMonitor
 {
@@ -140,6 +141,7 @@ class EventList : EventContainer, RateMonitor {
 
 	/// Get the next event
 	BaseEvent get_next_event( ref Random gen ) {
+		assert( total_rate > 0, "Total rate is zero or smaller" ); // Assert for performance in release version
 		real rnd = uniform!("()")( 0, total_rate, gen );
 		real sum = 0;
 		if (rnd < 0.5*total_rate) { 
@@ -156,7 +158,15 @@ class EventList : EventContainer, RateMonitor {
 					return ev;
 			}
 		}
-		return null;
+
+		// This should not happen and is normally caused by numerical errors.
+		// Recalculate mytotal_rate should solve this problem
+		mytotal_rate = 0;
+		foreach( ev; container ) {
+			mytotal_rate += ev.rate;
+		}
+		enforce( mytotal_rate > 0, "Total rate of events should be larger than zero" );
+		return get_next_event( gen );
 	}
 
 	unittest {
