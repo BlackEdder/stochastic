@@ -263,5 +263,5 @@ class EventList : EventContainer, RateMonitor {
 
 	private:
 		real mytotal_rate = 0;
-		auto container = DList!BaseEvent();
+		BaseEvent[] container;
 }
