@@ -19,7 +19,7 @@ class GrowthEvent : Event {
 		if (growth_state>5) {
 			auto gev = new GrowthEvent( population );
 			population.add_event( gev );
-			auto dev = new DeathEvent( gev );
+			auto dev = new DeathEvent( population, gev );
 			population.add_event( dev );
 			growth_state = 0;
 			return 1;
@@ -33,18 +33,20 @@ class GrowthEvent : Event {
 }
 
 class DeathEvent : Event {
-	this( GrowthEvent my_growth_event ) { 
+	this( EventList my_population, GrowthEvent my_growth_event ) { 
 		rate = 0.02;
 		growth_event = my_growth_event;
+		population = my_population;
 	}
 
 	override int execute() {
-		growth_event.rate = 0;
-		rate = 0;
+		population.del_event( growth_event );
+		population.del_event( this );
 		return -1;
 	}
 	private:
 		GrowthEvent growth_event;
+		EventList population;
 }
 
 struct GillespieState {
@@ -62,7 +64,7 @@ void simulate_population() {
 	foreach ( i; 0..100 ) {
 		auto gev = new GrowthEvent( population );
 		population.add_event( gev );
-		auto dev = new DeathEvent( gev );
+		auto dev = new DeathEvent( population, gev );
 		population.add_event( dev );
 	}
 

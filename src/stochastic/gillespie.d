@@ -105,6 +105,7 @@ interface EventContainer
 {
 	@property real total_rate();
 	void add_event( BaseEvent );
+	void del_event( BaseEvent );
 
 	/// Get time till next event
 	final real time_till_next_event( ref Random gen ) {
@@ -157,6 +158,16 @@ class EventList : EventContainer, RateMonitor {
 		container ~= [event];
 	}
 
+	/**
+		* Delete an event.
+		*
+		* Will set the rate to zero on deletion
+		*/
+	void del_event( BaseEvent event ) {
+		if (event.rate > 0)
+			event.rate = 0;
+	}
+
 	unittest {
 		auto el = new EventList();
 		assert( el.total_rate == 0 );
@@ -166,6 +177,9 @@ class EventList : EventContainer, RateMonitor {
 		assert( el.total_rate == 3.0 );
 		ev1.rate = 4.0;
 		assert( el.total_rate == 4.0 );
+
+		el.del_event( ev1 );
+		assert( el.total_rate == 0.0 );
 	}
 
 	void update_rate( real old_rate, real new_rate ) {
