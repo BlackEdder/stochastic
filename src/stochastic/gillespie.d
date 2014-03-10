@@ -279,3 +279,108 @@ class EventList : EventContainer, RateMonitor {
 		real mytotal_rate = 0;
 		BaseEvent[] container;
 }
+
+alias size_t event_id;
+
+class Gillespie {
+	import std.stdio;
+
+	final event_id new_event_id() {
+		last_id += 1;
+		return last_id;
+	}
+
+	final event_id add_event( event_id id, real event_rate, void delegate() event ) {
+		debug writeln( "added ID: ", id, " with rate: ", event_rate );
+		rates[id] = event_rate;
+		events[id] = event;
+		my_rate += event_rate;
+		return id;
+	}
+
+	final void update_rate( event_id id, real new_rate ) {
+		debug writeln( "updated ID: ", id, " with rate: ", new_rate );
+		my_rate += new_rate - rates[id];
+		rates[id] = new_rate;
+	}
+
+	final void del_event( event_id id ) {
+		debug writeln( "deleted ID: ", id, " with rate: ", rates[id] );
+		my_rate -= rates[id];
+		rates.remove( id );
+		events.remove( id );
+	}
+
+	final void delegate() get_next_event( ref Random gen ) {
+		assert( my_rate > 0, "Total rate is zero or smaller" ); // Assert for performance in release version
+		real rnd = uniform!("()")( 0, my_rate, gen );
+		real sum = 0;
+		if (rnd < 0.5*my_rate) { 
+			foreach ( id, rate ; rates ) {
+				sum = sum + rate;
+				if (sum > rnd) {
+					debug writeln( "Picked: ", id, " ", rnd, " ", sum, " ", my_rate );
+					return events[id];
+				}
+			}
+		} else { // rnd so big, better start looking at the end
+			rnd = my_rate - rnd;
+			foreach_reverse ( id, rate; rates ) {
+				sum = sum + rate;
+				if (sum > rnd) {
+					debug writeln( "Picked: ", id, " ", rnd, " ", sum, " ", my_rate );
+					return events[id];
+				}
+			}
+		}
+		assert( false, "This should not happen" );
+	}
+
+	auto simulation( ref Random gen ) {
+		auto init_state = tuple( this.time_till_next_event( gen ),
+				this.get_next_event( gen ) );
+		return recurrence!((s,n){
+				return tuple (s[n-1][0] +	this.time_till_next_event( gen ),
+					this.get_next_event( gen ) );
+				})( init_state );
+	}
+
+	final real time_till_next_event( ref Random gen ) {
+		return stochastic.random.exponential( my_rate, gen );
+	}
+
+	private:
+		real my_rate = 0;
+		real[event_id] rates;
+		void delegate()[event_id] events;
+
+		event_id last_id = 0;
+}
+
+unittest {
+	class Test {
+		this( size_t take_it ) {
+			mine = take_it;
+		}
+
+		void execute(ref size_t sum) {
+			sum += mine;
+		}
+		private:
+			size_t mine;
+	}
+	void delegate()[size_t] events;
+	size_t sum = 0;
+	auto t = new Test( 1 );
+	events[1] = delegate() => t.execute(sum);
+	auto t2 = new Test( 10 );
+	events[2] = delegate() => t2.execute(sum);
+	assert( sum == 0 );
+	events[2]();
+	assert( sum == 10 );
+	events[2]();
+	assert( sum == 20 );
+	events[1]();
+	assert( sum == 21 );
+}
+
