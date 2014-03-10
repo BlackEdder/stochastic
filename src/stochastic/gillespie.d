@@ -48,7 +48,6 @@ class Gillespie {
 	}
 
 	final event_id add_event( event_id id, real event_rate, void delegate() event ) {
-		debug writeln( "added ID: ", id, " with rate: ", event_rate );
 		rates[id] = event_rate;
 		events[id] = event;
 		my_rate += event_rate;
@@ -56,13 +55,11 @@ class Gillespie {
 	}
 
 	final void update_rate( event_id id, real new_rate ) {
-		debug writeln( "updated ID: ", id, " with rate: ", new_rate );
 		my_rate += new_rate - rates[id];
 		rates[id] = new_rate;
 	}
 
 	final void del_event( event_id id ) {
-		debug writeln( "deleted ID: ", id, " with rate: ", rates[id] );
 		my_rate -= rates[id];
 		rates.remove( id );
 		events.remove( id );
@@ -76,7 +73,6 @@ class Gillespie {
 			foreach ( id, rate ; rates ) {
 				sum = sum + rate;
 				if (sum > rnd) {
-					debug writeln( "Picked: ", id, " ", rnd, " ", sum, " ", my_rate );
 					return events[id];
 				}
 			}
