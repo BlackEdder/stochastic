@@ -19,13 +19,6 @@
 			"sourceFiles": ["examples/population.d"],
 			"targetName": "population",
 			"targetPath": "bin/"
-		},
-		{
-			"name": "new_population",
-			"targetType": "executable",
-			"sourceFiles": ["examples/new_population.d"],
-			"targetName": "new_population",
-			"targetPath": "bin/"
-		}
+		}	
 	]
 }

@@ -4,69 +4,48 @@ import std.range;
 
 import stochastic.gillespie;
 
-abstract class Event : BaseEvent {
-	int execute();
+void birth( Gillespie population, ref size_t density ) {
+		auto growth_id = population.new_event_id;
+		population.add_event( growth_id, 0.18, 
+				delegate () => growth( population, density, growth_id, 0 ) );
+		density += 1;
+		auto death_id = population.new_event_id;
+		population.add_event( death_id, 0.02, 
+				delegate () => death( population, density, growth_id, death_id ));
 }
 
-class GrowthEvent : Event {
-	this( EventList my_population ) { 
-		rate = 0.18;
-		population = my_population;
-	}
-
-	override int execute() {
-		growth_state++;
-		if (growth_state>5) {
-			auto gev = new GrowthEvent( population );
-			population.add_event( gev );
-			auto dev = new DeathEvent( population, gev );
-			population.add_event( dev );
-			growth_state = 0;
-			return 1;
+void growth( Gillespie population, ref size_t density, 
+		event_id growth_id, size_t stage ) {
+		population.del_event( growth_id );
+		if (stage > 4) {
+			birth( population, density );
+			population.add_event( growth_id, 0.18, 
+				delegate () => growth( population, density, growth_id, 0 ) );
+		} else {
+			population.add_event( growth_id, 0.18, 
+				delegate () => growth( population, density, growth_id, stage + 1 ) );
 		}
-		return 0;
-	}
-
-	private:
-		size_t growth_state = 0;
-		EventList population;
 }
 
-class DeathEvent : Event {
-	this( EventList my_population, GrowthEvent my_growth_event ) { 
-		rate = 0.02;
-		growth_event = my_growth_event;
-		population = my_population;
-	}
-
-	override int execute() {
-		population.del_event( growth_event );
-		population.del_event( this );
-		return -1;
-	}
-	private:
-		GrowthEvent growth_event;
-		EventList population;
-}
-
-struct GillespieState {
-	real time = 0;
-	BaseEvent event;
+void death( Gillespie population, ref size_t density, event_id growth_id,
+		event_id death_id ) {
+	population.del_event( growth_id );
+	population.del_event( death_id );
+	density -= 1;
 }
 
 void simulate_population() {
 	static Random gen;
 
-	EventList population = new EventList();
+	auto population = new Gillespie();
 
-	size_t density = 100;
+	size_t density = 0;
 
 	foreach ( i; 0..100 ) {
-		auto gev = new GrowthEvent( population );
-		population.add_event( gev );
-		auto dev = new DeathEvent( population, gev );
-		population.add_event( dev );
+		birth( population, density );
 	}
+
+	real t = 0;
 
 	foreach ( state; population.simulation( gen ) ) {
 		if (state[0] > 400) {
@@ -74,8 +53,7 @@ void simulate_population() {
 			break;
 		}
 
-		auto event = cast(Event) state[1];
-		density += event.execute();
+		state[1]();
 		if (density == 0) {
 			writeln( "Population went extinct." );
 			break;
