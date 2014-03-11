@@ -36,67 +36,74 @@ import std.exception;
 alias size_t event_id;
 
 /**
-Class implementing the gillespie algorithm
-
-Examples:
---------------------
-import std.stdio;
-import std.random;
-import std.range;
-
-import stochastic.gillespie;
-
-void birth( Gillespie population, ref size_t density ) {
-    density += 1;
-    auto growth_id = population.new_event_id;
-    population.add_event( growth_id, 0.03, 
-        delegate () => birth( population, density ) );
-    auto death_id = population.new_event_id;
-    population.add_event( death_id, 0.02, 
-        delegate () => death( population, density, growth_id, death_id ));
-}
-
-void death( Gillespie population, ref size_t density, event_id growth_id,
-    event_id death_id ) {
-  population.del_event( growth_id );
-  population.del_event( death_id );
-  density -= 1;
-}
-
-void simulate_population() {
-  static Random gen;
-
-  auto population = new Gillespie();
-
-  size_t density = 0;
-
-  foreach ( i; 0..100 ) {
-    birth( population, density );
-  }
-
-  real t = 0;
-
-  foreach ( state; population.simulation( gen ) ) {
-    writeln( state[0], " ", density );
-
-    if (state[0] > 400) {
-      break;
-    }
-
-    state[1]();
-    if (density == 0) {
-      writeln( "Population went extinct." );
-      break;
-    }
-  }
-}
-
-void main() {
-  simulate_population();
-}
+* Class implementing the gillespie algorithm
 */
 final class Gillespie {
-	import std.stdio;
+	/** 
+	*	Return an infinite (lazy) array with ( time, event ) tuples
+	*/
+	auto simulation( ref Random gen ) {
+		auto init_state = tuple( this.time_till_next_event( gen ),
+				this.get_next_event( gen ) );
+		return recurrence!((s,n){
+				return tuple (s[n-1][0] +	this.time_till_next_event( gen ),
+					this.get_next_event( gen ) );
+				})( init_state );
+	}
+
+	/// Birth Death example
+	unittest {
+		size_t death_count = 0;
+		void death( Gillespie population, ref size_t density, event_id birth_id,
+				event_id death_id ) {
+			death_count++;
+			population.del_event( birth_id );
+			population.del_event( death_id );
+			density -= 1;
+		}
+
+		size_t birth_count = 0;
+		void birth( Gillespie population, ref size_t density ) {
+			density += 1;
+			birth_count++;
+			auto birth_id = population.new_event_id;
+			population.add_event( birth_id, 0.03, 
+					delegate () => birth( population, density ) );
+			auto death_id = population.new_event_id;
+			population.add_event( death_id, 0.02, 
+					delegate () => death( population, density, birth_id, death_id ));
+		}
+
+		Random gen;
+
+		auto population = new Gillespie();
+
+		size_t density = 0;
+
+		foreach ( i; 0..100 ) {
+			birth( population, density ); // Initial population
+		}
+
+		foreach ( state; population.simulation( gen ) ) {
+			if (state[0] > 100) { // Stop after time > 100
+				break;
+			}
+
+			state[1](); // Execute event
+
+			if (density == 0) {
+				break;
+			}
+			assert( population.length == 2*density ); // Birth and death event for each individual
+			real exact_rate = density*(0.03 + 0.02);
+			assert( 0.9999*exact_rate < population.rate  && population.rate < 1.0001*exact_rate  );
+
+	
+		}
+		real ratio = (cast(real) birth_count-100)/death_count;
+		assert( 0.9*ratio < 0.03/0.02  && 0.03/0.02 < 1.1*ratio  );
+	}
+
 
 	/// Total rate of all events combined
 	@property auto rate() {
@@ -131,28 +138,6 @@ final class Gillespie {
 		events.remove( id );
 	}
 
-	/** 
-	*	Return an infinite (lazy) array with ( time, event ) tuples
-	*
-	* Usage:
-	* --------
-	* Gillespie population;
-	* // Add events
-	*
-	* // Run simulation
-	* foreach ( state; population.simulation( gen ) ) {
-	*   state[1](); // Execute event
-	* }
-  */
-	auto simulation( ref Random gen ) {
-		auto init_state = tuple( this.time_till_next_event( gen ),
-				this.get_next_event( gen ) );
-		return recurrence!((s,n){
-				return tuple (s[n-1][0] +	this.time_till_next_event( gen ),
-					this.get_next_event( gen ) );
-				})( init_state );
-	}
-
 
 	/// Return the next event
 	void delegate() get_next_event( ref Random gen ) {
@@ -170,6 +155,7 @@ final class Gillespie {
 	}
 
 	unittest {
+		import std.stdio;
 		Random gen;
 		auto gillespie = new Gillespie();
 		auto ev1_id = gillespie.new_event_id;
@@ -191,6 +177,9 @@ final class Gillespie {
 		}
 		assert( ev2_count > 890 && ev2_count < 911 );
 		assert( t > 9 && t < 11 );
+
+		gillespie.update_rate( ev2_id, 20.0 );
+		assert( gillespie.rate == 30.0 );
 	}
 
 	/// Time till next event
