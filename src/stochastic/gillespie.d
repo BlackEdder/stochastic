@@ -95,7 +95,7 @@ void main() {
   simulate_population();
 }
 */
-class Gillespie {
+final class Gillespie {
 	import std.stdio;
 
 	/// Total rate of all events combined
@@ -104,13 +104,13 @@ class Gillespie {
 	}
 	
 	/// Get a new event id
-	final event_id new_event_id() {
+	event_id new_event_id() {
 		last_id += 1;
 		return last_id;
 	}
 
 	/// Add a new event given an event_id, rate and event
-	final event_id add_event( const event_id id, real event_rate, 
+	event_id add_event( const event_id id, real event_rate, 
 			void delegate() event ) {
 		rates[id] = event_rate;
 		events[id] = event;
@@ -119,13 +119,13 @@ class Gillespie {
 	}
 
 	/// Update the rate of the give event
-	final void update_rate( const event_id id, real new_rate ) {
+	void update_rate( const event_id id, real new_rate ) {
 		my_rate += new_rate - rates[id];
 		rates[id] = new_rate;
 	}
 
 	/// Delete an event
-	final void del_event( const event_id id ) {
+	void del_event( const event_id id ) {
 		my_rate -= rates[id];
 		rates.remove( id );
 		events.remove( id );
@@ -144,7 +144,7 @@ class Gillespie {
 	*   state[1](); // Execute event
 	* }
   */
-	final auto simulation( ref Random gen ) {
+	auto simulation( ref Random gen ) {
 		auto init_state = tuple( this.time_till_next_event( gen ),
 				this.get_next_event( gen ) );
 		return recurrence!((s,n){
@@ -155,7 +155,7 @@ class Gillespie {
 
 
 	/// Return the next event
-	final void delegate() get_next_event( ref Random gen ) {
+	void delegate() get_next_event( ref Random gen ) {
 		assert( my_rate > 0, "Total rate is zero or smaller" ); // Assert for performance in release version
 		real rnd = uniform!("()")( 0, my_rate, gen );
 		real sum = 0;
@@ -194,12 +194,12 @@ class Gillespie {
 	}
 
 	/// Time till next event
-	final real time_till_next_event( ref Random gen ) {
+	real time_till_next_event( ref Random gen ) {
 		return stochastic.random.exponential( my_rate, gen );
 	}
 	
 	/// Number of events
-	final size_t length() {
+	size_t length() {
 		return rates.length();
 	}
 
