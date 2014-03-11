@@ -110,7 +110,8 @@ class Gillespie {
 	}
 
 	/// Add a new event given an event_id, rate and event
-	final event_id add_event( event_id id, real event_rate, void delegate() event ) {
+	final event_id add_event( const event_id id, real event_rate, 
+			void delegate() event ) {
 		rates[id] = event_rate;
 		events[id] = event;
 		my_rate += event_rate;
@@ -118,13 +119,13 @@ class Gillespie {
 	}
 
 	/// Update the rate of the give event
-	final void update_rate( event_id id, real new_rate ) {
+	final void update_rate( const event_id id, real new_rate ) {
 		my_rate += new_rate - rates[id];
 		rates[id] = new_rate;
 	}
 
 	/// Delete an event
-	final void del_event( event_id id ) {
+	final void del_event( const event_id id ) {
 		my_rate -= rates[id];
 		rates.remove( id );
 		events.remove( id );
@@ -205,8 +206,8 @@ class Gillespie {
 	private:
 		real my_rate = 0;
 		size_t ids;
-		real[event_id] rates;
-		void delegate()[event_id] events;
+		real[const event_id] rates;
+		void delegate()[const event_id] events;
 
 		event_id last_id = 0;
 }
