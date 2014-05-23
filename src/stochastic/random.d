@@ -25,6 +25,7 @@ module stochastic.random;
 public import std.random;
 import std.math;
 import std.stdio;
+import std.exception;
 
 /**
  * Generate random variable using the exponential distribution
@@ -33,17 +34,13 @@ import std.stdio;
  *	gen =	is the random number generator
  */
 auto exponential( const real lambda, ref Random gen  ) {
-	if (lambda<0)
-		return 0;
+	enforce(lambda >= 0, "Rate needs to be equal to or larger than 0");
 	auto rnd = uniform!("(]")( 0.0, 1.0, gen );
 	return -1.0/lambda*log( rnd );
 }
 
 unittest {
 	Random gen;
-
-	// Test lambda < 0
-	assert( exponential( -1, gen ) == 0 );
 
 	// Test large number of results
 	double cdf( double x, double lambda ) {
@@ -111,3 +108,55 @@ unittest {
 	assert( cdf_test > 0.024 && cdf_test < 0.026 );
 
 }
+
+private int factorial(int i)
+{ if (i == 0)
+    return 1;
+  else
+    return i * factorial(i - 1);
+}
+
+/**
+ * Generate random variable using the poisson distribution
+ * Params:
+ *	lambda = is the rate. 
+ *	gen =	is the random number generator
+ */
+size_t poisson( const real lambda, ref Random gen  ) {
+	// Implementation based on Knuth
+	enforce(lambda>=0, "Rate needs to be equal to or larger than 0");
+	double p = 1;
+	double l = exp( -lambda );
+	size_t k = 0;
+	while (p>l) {
+		k++;
+		p *= uniform!("[]")(0.0, 1.0, gen );
+	}
+	return k-1;
+}
+
+unittest {
+	Random gen;
+
+	// Test large number of results
+	double cdf( double x, double lambda ) {
+		double sum = 0;
+		for (int i = 0; i <= floor(x); ++i) {
+			sum += pow(lambda, i)/factorial( i );
+		}
+		return exp(-lambda)*sum;
+	}
+	double sum = 0;
+	double cdf_test = 0;
+	for (int i = 0; i < 10000; i++) {
+		double rpois = poisson( 5.0, gen );
+		assert( rpois >= 0 );
+		sum = sum + rpois;
+		if (rpois <= 2)
+			cdf_test++;
+	}
+	assert( sum > 49000 && sum < 51000 );
+	double real_cdf = 10000*cdf( 2.5, 5.0 );
+	assert( cdf_test > 0.95*real_cdf && cdf_test < 1.05*real_cdf );
+}
+
