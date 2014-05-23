@@ -5,32 +5,32 @@ import std.range;
 import stochastic.gillespie;
 
 void birth( Gillespie population, ref size_t density ) {
-		auto growth_id = population.new_event_id;
-		population.add_event( growth_id, 0.18, 
-				delegate () => growth( population, density, growth_id, 0 ) );
+		auto growthId = population.newEventId;
+		population.addEvent( growthId, 0.18, 
+				delegate () => growth( population, density, growthId, 0 ) );
 		density += 1;
-		auto death_id = population.new_event_id;
-		population.add_event( death_id, 0.02, 
-				delegate () => death( population, density, growth_id, death_id ));
+		auto deathId = population.newEventId;
+		population.addEvent( deathId, 0.02, 
+				delegate () => death( population, density, growthId, deathId ));
 }
 
 void growth( Gillespie population, ref size_t density, 
-		event_id growth_id, size_t stage ) {
-		population.del_event( growth_id );
+		EventId growthId, size_t stage ) {
+		population.delEvent( growthId );
 		if (stage > 4) {
 			birth( population, density );
-			population.add_event( growth_id, 0.18, 
-				delegate () => growth( population, density, growth_id, 0 ) );
+			population.addEvent( growthId, 0.18, 
+				delegate () => growth( population, density, growthId, 0 ) );
 		} else {
-			population.add_event( growth_id, 0.18, 
-				delegate () => growth( population, density, growth_id, stage + 1 ) );
+			population.addEvent( growthId, 0.18, 
+				delegate () => growth( population, density, growthId, stage + 1 ) );
 		}
 }
 
-void death( Gillespie population, ref size_t density, event_id growth_id,
-		event_id death_id ) {
-	population.del_event( growth_id );
-	population.del_event( death_id );
+void death( Gillespie population, ref size_t density, EventId growthId,
+		EventId deathId ) {
+	population.delEvent( growthId );
+	population.delEvent( deathId );
 	density -= 1;
 }
 

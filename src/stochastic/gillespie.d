@@ -33,7 +33,7 @@ import std.range;
 import std.container;
 import std.exception;
 
-alias size_t event_id;
+alias size_t EventId;
 
 /**
 * Class implementing the gillespie algorithm
@@ -43,35 +43,35 @@ final class Gillespie {
 	*	Return an infinite (lazy) array with ( time, event ) tuples
 	*/
 	auto simulation( ref Random gen ) {
-		auto init_state = tuple( this.time_till_next_event( gen ),
-				this.get_next_event( gen ) );
+		auto initState = tuple( this.time_till_next_event( gen ),
+				this.getNextEvent( gen ) );
 		return recurrence!((s,n){
 				return tuple (s[n-1][0] +	this.time_till_next_event( gen ),
-					this.get_next_event( gen ) );
-				})( init_state );
+					this.getNextEvent( gen ) );
+				})( initState );
 	}
 
 	/// Birth Death example
 	unittest {
-		size_t death_count = 0;
-		void death( Gillespie population, ref size_t density, event_id birth_id,
-				event_id death_id ) {
-			death_count++;
-			population.del_event( birth_id );
-			population.del_event( death_id );
+		size_t deathCount = 0;
+		void death( Gillespie population, ref size_t density, EventId birthId,
+				EventId deathId ) {
+			deathCount++;
+			population.delEvent( birthId );
+			population.delEvent( deathId );
 			density -= 1;
 		}
 
-		size_t birth_count = 0;
+		size_t birthCount = 0;
 		void birth( Gillespie population, ref size_t density ) {
 			density += 1;
-			birth_count++;
-			auto birth_id = population.new_event_id;
-			population.add_event( birth_id, 0.03, 
+			birthCount++;
+			auto birthId = population.newEventId;
+			population.addEvent( birthId, 0.03, 
 					delegate () => birth( population, density ) );
-			auto death_id = population.new_event_id;
-			population.add_event( death_id, 0.02, 
-					delegate () => death( population, density, birth_id, death_id ));
+			auto deathId = population.newEventId;
+			population.addEvent( deathId, 0.02, 
+					delegate () => death( population, density, birthId, deathId ));
 		}
 
 		Random gen;
@@ -95,56 +95,56 @@ final class Gillespie {
 				break;
 			}
 			assert( population.length == 2*density ); // Birth and death event for each individual
-			real exact_rate = density*(0.03 + 0.02);
-			assert( 0.9999*exact_rate < population.rate  && population.rate < 1.0001*exact_rate  );
+			real exactRate = density*(0.03 + 0.02);
+			assert( 0.9999*exactRate < population.rate  && population.rate < 1.0001*exactRate  );
 
 	
 		}
-		real ratio = (cast(real) birth_count-100)/death_count;
+		real ratio = (cast(real) birthCount-100)/deathCount;
 		assert( 0.9*ratio < 0.03/0.02  && 0.03/0.02 < 1.1*ratio  );
 	}
 
 
 	/// Total rate of all events combined
 	@property auto rate() {
-		return my_rate;
+		return myRate;
 	}
 	
 	/// Get a new event id
-	event_id new_event_id() {
-		last_id += 1;
-		return last_id;
+	EventId newEventId() {
+		lastId += 1;
+		return lastId;
 	}
 
-	/// Add a new event given an event_id, rate and event
-	event_id add_event( const event_id id, real event_rate, 
+	/// Add a new event given an EventId, rate and event
+	EventId addEvent( const EventId id, real eventRate, 
 			void delegate() event ) {
-		rates[id] = event_rate;
+		rates[id] = eventRate;
 		events[id] = event;
-		my_rate += event_rate;
+		myRate += eventRate;
 		return id;
 	}
 
 	/// Update the rate of the give event
-	void update_rate( const event_id id, real new_rate ) {
-		my_rate += new_rate - rates[id];
-		rates[id] = new_rate;
+	void updateRate( const EventId id, real newRate ) {
+		myRate += newRate - rates[id];
+		rates[id] = newRate;
 	}
 
 	/// Delete an event
-	void del_event( const event_id id ) {
-		my_rate -= rates[id];
+	void delEvent( const EventId id ) {
+		myRate -= rates[id];
 		rates.remove( id );
 		events.remove( id );
 	}
 
 
 	/// Return the next event
-	void delegate() get_next_event( ref Random gen ) {
-		assert( my_rate > 0, "Total rate is zero or smaller" ); // Assert for performance in release version
-		real rnd = uniform!("()")( 0, my_rate, gen );
+	void delegate() getNextEvent( ref Random gen ) {
+		assert( myRate > 0, "Total rate is zero or smaller" ); // Assert for performance in release version
+		real rnd = uniform!("()")( 0, myRate, gen );
 		real sum = 0;
-		//if (rnd < 0.5*my_rate) { 
+		//if (rnd < 0.5*myRate) { 
 			foreach ( id, rate ; rates ) {
 				sum = sum + rate;
 				if (sum > rnd) {
@@ -158,33 +158,33 @@ final class Gillespie {
 		import std.stdio;
 		Random gen;
 		auto gillespie = new Gillespie();
-		auto ev1_id = gillespie.new_event_id;
+		auto ev1Id = gillespie.newEventId;
 		size_t call_ev1 = 0;
 		auto l1 = () => (call_ev1 += 1, write("")); // Write is to force void delegate
-		gillespie.add_event( ev1_id, 10.0, l1 );
-		gillespie.get_next_event( gen )();
+		gillespie.addEvent( ev1Id, 10.0, l1 );
+		gillespie.getNextEvent( gen )();
 		assert( call_ev1 == 1 );
 
-		auto ev2_id = gillespie.new_event_id;
+		auto ev2Id = gillespie.newEventId;
 		size_t ev2_count = 0;
 		auto l2 = () => (ev2_count += 1, write(""));
-		gillespie.add_event( ev2_id, 90.0, l2 );
+		gillespie.addEvent( ev2Id, 90.0, l2 );
 
 		real t = 0;
 		foreach ( i; 1..1000 ) {
 			t += gillespie.time_till_next_event( gen );
-			gillespie.get_next_event( gen )();
+			gillespie.getNextEvent( gen )();
 		}
 		assert( ev2_count > 890 && ev2_count < 911 );
 		assert( t > 9 && t < 11 );
 
-		gillespie.update_rate( ev2_id, 20.0 );
+		gillespie.updateRate( ev2Id, 20.0 );
 		assert( gillespie.rate == 30.0 );
 	}
 
 	/// Time till next event
 	real time_till_next_event( ref Random gen ) {
-		return stochastic.random.exponential( my_rate, gen );
+		return stochastic.random.exponential( myRate, gen );
 	}
 	
 	/// Number of events
@@ -193,10 +193,10 @@ final class Gillespie {
 	}
 
 	private:
-		real my_rate = 0;
+		real myRate = 0;
 		size_t ids;
-		real[const event_id] rates;
-		void delegate()[const event_id] events;
+		real[const EventId] rates;
+		void delegate()[const EventId] events;
 
-		event_id last_id = 0;
+		EventId lastId = 0;
 }
