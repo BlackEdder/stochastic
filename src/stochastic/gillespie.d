@@ -43,10 +43,10 @@ final class Gillespie( T ) {
 	*	Return an infinite (lazy) array with ( time, event ) tuples
 	*/
 	auto simulation( ref Random gen ) {
-		auto initState = tuple( this.time_till_next_event( gen ),
+		auto initState = tuple( this.timeTillNextEvent( gen ),
 				this.getNextEvent( gen ) );
 		return recurrence!((s,n){
-				return tuple (s[n-1][0] +	this.time_till_next_event( gen ),
+				return tuple (s[n-1][0] +	this.timeTillNextEvent( gen ),
 					this.getNextEvent( gen ) );
 				})( initState );
 	}
@@ -159,23 +159,23 @@ final class Gillespie( T ) {
 		Random gen;
 		auto gillespie = new Gillespie!(void delegate())();
 		auto ev1Id = gillespie.newEventId;
-		size_t call_ev1 = 0;
-		auto l1 = () => (call_ev1 += 1, write("")); // Write is to force void delegate
+		size_t callEv1 = 0;
+		auto l1 = () => (callEv1 += 1, write("")); // Write is to force void delegate
 		gillespie.addEvent( ev1Id, 10.0, l1 );
 		gillespie.getNextEvent( gen )();
-		assert( call_ev1 == 1 );
+		assert( callEv1 == 1 );
 
 		auto ev2Id = gillespie.newEventId;
-		size_t ev2_count = 0;
-		auto l2 = () => (ev2_count += 1, write(""));
+		size_t ev2Count = 0;
+		auto l2 = () => (ev2Count += 1, write(""));
 		gillespie.addEvent( ev2Id, 90.0, l2 );
 
 		real t = 0;
 		foreach ( i; 1..1000 ) {
-			t += gillespie.time_till_next_event( gen );
+			t += gillespie.timeTillNextEvent( gen );
 			gillespie.getNextEvent( gen )();
 		}
-		assert( ev2_count > 890 && ev2_count < 911 );
+		assert( ev2Count > 890 && ev2Count < 911 );
 		assert( t > 9 && t < 11 );
 
 		gillespie.updateRate( ev2Id, 20.0 );
@@ -183,7 +183,7 @@ final class Gillespie( T ) {
 	}
 
 	/// Time till next event
-	real time_till_next_event( ref Random gen ) {
+	real timeTillNextEvent( ref Random gen ) {
 		return stochastic.random.exponential( myRate, gen );
 	}
 	
