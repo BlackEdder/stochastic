@@ -38,7 +38,7 @@ alias size_t EventId;
 /**
 * Class implementing the gillespie algorithm
 */
-final class Gillespie {
+final class Gillespie( T ) {
 	/** 
 	*	Return an infinite (lazy) array with ( time, event ) tuples
 	*/
@@ -54,7 +54,7 @@ final class Gillespie {
 	/// Birth Death example
 	unittest {
 		size_t deathCount = 0;
-		void death( Gillespie population, ref size_t density, EventId birthId,
+		void death(T)( Gillespie!(T) population, ref size_t density, EventId birthId,
 				EventId deathId ) {
 			deathCount++;
 			population.delEvent( birthId );
@@ -63,7 +63,7 @@ final class Gillespie {
 		}
 
 		size_t birthCount = 0;
-		void birth( Gillespie population, ref size_t density ) {
+		void birth(T)( Gillespie!(T) population, ref size_t density ) {
 			density += 1;
 			birthCount++;
 			auto birthId = population.newEventId;
@@ -76,7 +76,7 @@ final class Gillespie {
 
 		Random gen;
 
-		auto population = new Gillespie();
+		auto population = new Gillespie!(void delegate())();
 
 		size_t density = 0;
 
@@ -118,7 +118,7 @@ final class Gillespie {
 
 	/// Add a new event given an EventId, rate and event
 	EventId addEvent( const EventId id, real eventRate, 
-			void delegate() event ) {
+			T event ) {
 		rates[id] = eventRate;
 		events[id] = event;
 		myRate += eventRate;
@@ -140,7 +140,7 @@ final class Gillespie {
 
 
 	/// Return the next event
-	void delegate() getNextEvent( ref Random gen ) {
+	T getNextEvent( ref Random gen ) {
 		assert( myRate > 0, "Total rate is zero or smaller" ); // Assert for performance in release version
 		real rnd = uniform!("()")( 0, myRate, gen );
 		real sum = 0;
@@ -157,7 +157,7 @@ final class Gillespie {
 	unittest {
 		import std.stdio;
 		Random gen;
-		auto gillespie = new Gillespie();
+		auto gillespie = new Gillespie!(void delegate())();
 		auto ev1Id = gillespie.newEventId;
 		size_t call_ev1 = 0;
 		auto l1 = () => (call_ev1 += 1, write("")); // Write is to force void delegate
@@ -196,7 +196,7 @@ final class Gillespie {
 		real myRate = 0;
 		size_t ids;
 		real[const EventId] rates;
-		void delegate()[const EventId] events;
+		T[const EventId] events;
 
 		EventId lastId = 0;
 }

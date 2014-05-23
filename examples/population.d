@@ -4,7 +4,7 @@ import std.range;
 
 import stochastic.gillespie;
 
-void birth( Gillespie population, ref size_t density ) {
+void birth(T)( Gillespie!(T) population, ref size_t density ) {
 		auto growthId = population.newEventId;
 		population.addEvent( growthId, 0.18, 
 				delegate () => growth( population, density, growthId, 0 ) );
@@ -14,7 +14,7 @@ void birth( Gillespie population, ref size_t density ) {
 				delegate () => death( population, density, growthId, deathId ));
 }
 
-void growth( Gillespie population, ref size_t density, 
+void growth(T)( Gillespie!(T) population, ref size_t density, 
 		EventId growthId, size_t stage ) {
 		population.delEvent( growthId );
 		if (stage > 4) {
@@ -27,7 +27,7 @@ void growth( Gillespie population, ref size_t density,
 		}
 }
 
-void death( Gillespie population, ref size_t density, EventId growthId,
+void death(T)( Gillespie!(T) population, ref size_t density, EventId growthId,
 		EventId deathId ) {
 	population.delEvent( growthId );
 	population.delEvent( deathId );
@@ -37,7 +37,7 @@ void death( Gillespie population, ref size_t density, EventId growthId,
 void simulate_population() {
 	static Random gen;
 
-	auto population = new Gillespie();
+	auto population = new Gillespie!(void delegate())();
 
 	size_t density = 0;
 
