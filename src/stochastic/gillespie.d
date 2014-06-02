@@ -66,6 +66,7 @@ final class Gillespie( T ) {
 	/// Add a new event given an EventId, rate and event
 	EventId addEvent( const EventId id, real eventRate, 
 			T event ) {
+		//debug writeln( "Adding event with id: ", id, " and rate ", eventRate );
 		rates[id] = eventRate;
 		events[id] = event;
 		myRate += eventRate;
@@ -117,7 +118,6 @@ final class Gillespie( T ) {
 
 	private:
 		real myRate = 0;
-		size_t ids;
 		real[const EventId] rates;
 		T[const EventId] events;
 
@@ -133,6 +133,7 @@ unittest {
 	size_t deathCount = 0;
 	void death(T)( Gillespie!(T) population, ref size_t density, EventId birthId,
 			EventId deathId ) {
+		//debug writeln( "Death: ", birthId, " ", deathId );
 		deathCount++;
 		population.delEvent( birthId );
 		population.delEvent( deathId );
@@ -143,6 +144,7 @@ unittest {
 	void birth(T)( Gillespie!(T) population, ref size_t density ) {
 		density += 1;
 		birthCount++;
+		//debug writeln( "Birth" );
 		auto birthId = population.newEventId;
 		population.addEvent( birthId, 0.03, 
 				delegate () => birth( population, density ) );
@@ -215,26 +217,23 @@ unittest {
 	Todo[] ts = ["todo1", "todo2", "todo3"];
 
 	auto gen = Random( unpredictableSeed );
-	EventId eventTodo(T)( Gillespie!(T) gillespie, Todo t, in EventId id ) {
-		gillespie.delEvent( id );
-		selectedTodos ~= t;
-		return id;
-	}
-
 	//Random gen = rndGen();
-	auto gillespie = new Gillespie!(EventId delegate())();
+	auto gillespie = new Gillespie!(EventId delegate(EventId))();
 	foreach( t; ts ) {
-		immutable e_id = gillespie.newEventId;
+		auto e_id = gillespie.newEventId;
 		gillespie.addEvent( e_id, 
-				1.0, delegate() => eventTodo( gillespie, t, e_id ) );
+				1.0, (EventId id){
+				gillespie.delEvent( id );
+				selectedTodos ~= t;
+				return id;
+				} );
 	}
 
 	auto sim = gillespie.simulation( gen );
 
 	for (size_t i = 0; i < no; i++) {
 		auto evId = gillespie.getNextEventId( gen );
-		auto execEvId = gillespie.events[evId]();
-		writeln( "Bla: ", execEvId, " ", evId );
+		auto execEvId = gillespie.events[evId](evId);
 		assert( execEvId == evId );
 	}
 }
