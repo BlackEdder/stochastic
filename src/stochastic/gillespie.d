@@ -85,9 +85,8 @@ final class Gillespie( T ) {
 		events.remove( id );
 	}
 
-
-	/// Return the next event
-	T getNextEvent( ref Random gen ) {
+	/// Return the EventId for the next event
+	EventId getNextEventId( ref Random gen ) {
 		assert( myRate > 0, "Total rate is zero or smaller" ); // Assert for performance in release version
 		real rnd = uniform!("()")( 0, myRate, gen );
 		real sum = 0;
@@ -95,10 +94,15 @@ final class Gillespie( T ) {
 			foreach ( id, rate ; rates ) {
 				sum = sum + rate;
 				if (sum > rnd) {
-					return events[id];
+					return id;
 				}
 			}
 		assert( false, "This should not happen" );
+	}
+
+	/// Return the next event
+	T getNextEvent( ref Random gen ) {
+		return events[getNextEventId( gen )];
 	}
 
 	/// Time till next event
@@ -202,4 +206,35 @@ unittest {
 
 	gillespie.updateRate( ev2Id, 20.0 );
 	assert( gillespie.rate == 30.0 );
+}
+
+unittest {
+	alias string Todo;
+	size_t no = 2;
+	Todo[] selectedTodos;
+	Todo[] ts = ["todo1", "todo2", "todo3"];
+
+	auto gen = Random( unpredictableSeed );
+	EventId eventTodo(T)( Gillespie!(T) gillespie, Todo t, in EventId id ) {
+		gillespie.delEvent( id );
+		selectedTodos ~= t;
+		return id;
+	}
+
+	//Random gen = rndGen();
+	auto gillespie = new Gillespie!(EventId delegate())();
+	foreach( t; ts ) {
+		immutable e_id = gillespie.newEventId;
+		gillespie.addEvent( e_id, 
+				1.0, delegate() => eventTodo( gillespie, t, e_id ) );
+	}
+
+	auto sim = gillespie.simulation( gen );
+
+	for (size_t i = 0; i < no; i++) {
+		auto evId = gillespie.getNextEventId( gen );
+		auto execEvId = gillespie.events[evId]();
+		writeln( "Bla: ", execEvId, " ", evId );
+		assert( execEvId == evId );
+	}
 }
