@@ -32,6 +32,7 @@ import std.random;
 import std.range;
 import std.container;
 import std.exception;
+import std.typecons;
 
 alias size_t EventId;
 
@@ -43,10 +44,10 @@ final class Gillespie( T ) {
 	*	Return an infinite (lazy) array with ( time, event ) tuples
 	*/
 	auto simulation( ref Random gen ) {
-		auto initState = tuple( this.timeTillNextEvent( gen ),
+		auto initState = Tuple!(real, T)( this.timeTillNextEvent( gen ),
 				this.getNextEvent( gen ) );
 		return recurrence!((s,n){
-				return tuple (s[n-1][0] +	this.timeTillNextEvent( gen ),
+				return Tuple!(real, T)(s[n-1][0] +	this.timeTillNextEvent( gen ),
 					this.getNextEvent( gen ) );
 				})( initState );
 	}
@@ -69,6 +70,7 @@ final class Gillespie( T ) {
 		//debug writeln( "Adding event with id: ", id, " and rate ", eventRate );
 		rates[id] = eventRate;
 		events[id] = event;
+		++noEvents;
 		myRate += eventRate;
 		return id;
 	}
@@ -81,6 +83,7 @@ final class Gillespie( T ) {
 
 	/// Delete an event
 	void delEvent( const EventId id ) {
+		--noEvents;
 		myRate -= rates[id];
 		rates.remove( id );
 		events.remove( id );
@@ -113,11 +116,12 @@ final class Gillespie( T ) {
 	
 	/// Number of events
 	size_t length() {
-		return rates.length();
+		return noEvents;
 	}
 
 	private:
 		real myRate = 0;
+		size_t noEvents = 0;
 		real[const EventId] rates;
 		T[const EventId] events;
 
