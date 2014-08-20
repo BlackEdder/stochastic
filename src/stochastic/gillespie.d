@@ -70,8 +70,12 @@ final class Gillespie( T ) {
 		//debug writeln( "Adding event with id: ", id, " and rate ", eventRate );
 		rates[id] = eventRate;
 		events[id] = event;
-		++noEvents;
 		myRate += eventRate;
+
+		static if ( __VERSION__ == 2.066 ) {
+			++noEvents;
+		}
+
 		return id;
 	}
 
@@ -83,10 +87,13 @@ final class Gillespie( T ) {
 
 	/// Delete an event
 	void delEvent( const EventId id ) {
-		--noEvents;
 		myRate -= rates[id];
 		rates.remove( id );
 		events.remove( id );
+
+		static if ( __VERSION__ == 2.066 ) {
+			--noEvents;
+		}
 	}
 
 	/// Return the EventId for the next event
@@ -116,16 +123,24 @@ final class Gillespie( T ) {
 	
 	/// Number of events
 	size_t length() {
-		return noEvents;
+		static if ( __VERSION__ == 2.066 ) {
+			return noEvents;
+		} else {
+			return rates.length;
+		}
 	}
 
 	private:
 		real myRate = 0;
-		size_t noEvents = 0;
 		real[const EventId] rates;
 		T[const EventId] events;
 
 		EventId lastId = 0;
+
+		// Associative array length not working in 2.066
+		static if ( __VERSION__ == 2.066 ) {
+			size_t noEvents = 0;
+		}
 }
 
 version(unittest) {
